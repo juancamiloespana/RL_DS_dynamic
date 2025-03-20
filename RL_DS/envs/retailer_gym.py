@@ -29,12 +29,14 @@ class RetailerOrdersEnv(gym.Env):
         self.order_cost_coefficient = 0.001         # USD / orders
 
         # Initial Conditions
+        
         self.initial_backlog = 1000
         self.initial_capacity = 100
         self.initial_cumulative_shipment = 0
         self.initial_cumulative_customer_demand = 0
         self.initial_retailer_total_cost = 0
-
+        self.initial_Retailer_total_cost = 0
+  
         # Derived variable
         self.desired_shipment = self.initial_backlog / self.target_delivery_delay
 
@@ -79,44 +81,55 @@ class RetailerOrdersEnv(gym.Env):
     def step(self, action):
         """Advances the environment by one time step based on the action."""
         # Clip the action within [0, 500]
-        action = np.clip(action, self.action_space.low, self.action_space.high)[0]
+        if self.current_step == 0:
+            self.backlog = self.initial_backlog
+            self.capacity = self.initial_capacity
+            self.cumulative_shipment = self.initial_cumulative_shipment
+            self.cumulative_customer_demand = self.initial_cumulative_customer_demand
+            self.retailer_total_cost = self.initial_Retailer_total_cost   
 
-        # Determine this step's customer demand
-        customer_demand = self.initial_channel_demand + self._pulse(self.current_step)
+        else:
 
-        # Update capacity
-        change_in_capacity = (self.desired_shipment - self.capacity) / self.time_adjust_backlog
-        self.capacity += change_in_capacity
+            self.backlog += (self.perceived_retailer_order-self.shipment_to_retailer)
+            self.capacity += (self.change_in_capacity)
+            self.cumulative_shipment += (self.shipments)
+            self.cumulative_customer_demand += (self.customer_demand)
+            self.retailer_total_cost += (self.costs)
+        
+        self.customer_demand = self.initial_channel_demand + self._pulse(self.current_step)
+        self.retailer_order = action
+        self.perceived_retailer_order = self._Delayppl(self.current_step,self.retailer_order,self.retailer_order_delay_time,self.initial_capacity)
+        self.shipment_to_retailer = self.capacity
+        self.desired_shipment = self.backlog/self.target_delivery_delay
+        self.change_in_capacity = (self.desired_shipment-self.capacity)/self.time_adjust_backlog
+        self.delivery_delay = self.target_delivery_delay*(1+max(0, (self.desired_shipment-self.capacity)/self.normal_capacity))
+        self.shipments = self.shipment_to_retailer
+        self.orders = self.customer_demand
+        self.supply_gap = self.cumulative_customer_demand-self.cumulative_shipment
+        self.supply_gap_costs = self.supply_gap_cost_coefficient*(self.supply_gap**2) 
+        self.retailer_costs = self.order_cost_coefficient*(self.retailer_order**2)
+        self.costs = self.supply_gap_costs+self.retailer_costs
 
-        # Update desired shipment based on backlog
-        self.desired_shipment = self.backlog / self.target_delivery_delay
-
-        # Determine perceived order (delayed by retailer_order_delay_time)
-        perceived_retailer_order = self._delayed_signal(
-            self.current_step, action, self.retailer_order_delay_time, self.initial_capacity
-        )
-
-        # Shipment to the retailer is limited by capacity or desired_shipment
-        shipment_to_retailer = min(self.capacity, self.desired_shipment)
-
-        # Update backlog
-        self.backlog += (perceived_retailer_order - shipment_to_retailer)
-
-        # Update cumulative metrics
-        self.cumulative_shipment += shipment_to_retailer
-        self.cumulative_customer_demand += customer_demand
-
-        # Calculate costs
-        supply_gap = self.cumulative_customer_demand - self.cumulative_shipment
-        supply_gap_costs = self.supply_gap_cost_coefficient * (supply_gap ** 2)
-        retailer_costs = self.order_cost_coefficient * (action ** 2)
-        step_cost = supply_gap_costs + retailer_costs
-
-        # For RL training, you'd typically use incremental reward:
-        # reward = -step_cost
-        # But for now, the code returns the *cumulative* cost to maintain original logic.
-        self.retailer_total_cost += step_cost
-        reward = -step_cost  # Original approach
+        # self.backlog += (perceived_retailer_order - shipment_to_retailer)
+        # customer_demand = self.initial_channel_demand + self._pulse(self.current_step)
+        # change_in_capacity = (self.desired_shipment - self.capacity) / self.time_adjust_backlog
+        # self.capacity += change_in_capacity
+        # self.desired_shipment = self.backlog / self.target_delivery_delay
+        # perceived_retailer_order = self._delayed_signal(
+        #     self.current_step, action, self.retailer_order_delay_time, self.initial_capacity
+        # )
+        # shipment_to_retailer = min(self.capacity, self.desired_shipment)
+        # self.cumulative_shipment += shipment_to_retailer
+        # self.cumulative_customer_demand += customer_demand
+        # supply_gap = self.cumulative_customer_demand - self.cumulative_shipment
+        # supply_gap_costs = self.supply_gap_cost_coefficient * (supply_gap ** 2)
+        # retailer_costs = self.order_cost_coefficient * (action ** 2)
+        # step_cost = supply_gap_costs + retailer_costs
+        # self.retailer_total_cost += step_cost
+        
+        
+        
+        reward = -self.costs  # Original approach
 
         # Check termination
         self.current_step += 1
@@ -125,29 +138,31 @@ class RetailerOrdersEnv(gym.Env):
         # (Optional) Log step data if track_data is True
         if self.track_data:
             self.history.append({
-                "step": self.current_step,
+                #"step": self.current_step,
+                "demand": float(self.customer_demand),
                 "action": float(action),
-                "demand": float(customer_demand),
-                "capacity": float(self.capacity),
-                "desired_shipment": float(self.desired_shipment),
-                "change_in_capacity": float(change_in_capacity),
-                "shipment_to_retailer": float(shipment_to_retailer),
                 "backlog": float(self.backlog),
-                "supply_gap": float(supply_gap),
-                "supply_gap_cost": float(supply_gap_costs),
-                "order_cost": float(retailer_costs),
-                "step_cost": float(step_cost),
+                "capacity": float(self.capacity),
+                "change_in_capacity": float(self.change_in_capacity), 
+                "shipment_to_retailer": float(self.shipment_to_retailer),           
+                "desired_shipment": float(self.desired_shipment),
+                "cumulative_demand": float(self.cumulative_customer_demand),
+                "cumulative_shipment": float(self.cumulative_shipment),
+                #"supply_gap": float(supply_gap),
+                "order_cost": float(self.retailer_costs),
+                "supply_gap_cost": float(self.supply_gap_costs),
+                "step_cost": float(self.costs),
                 "reward": float(reward),
                 "cumulative_cost": float(self.retailer_total_cost)
             })
 
         return self._get_observation(), reward, done, False, {}
 
-    def _pulse(self, step, start=2, height=20):
+    def _pulse(self, step, start=3, height=20):
         """Returns a pulse signal within a specific range."""
         return height if start <= step <= self.time_horizon else 0
 
-    def _delayed_signal(self, step, value, delay, initial_value):
+    def _Delayppl(self, step, value, delay, initial_value):
         """Returns a delayed version of the action using a simple delay buffer."""
         self.delay_vector[step] = value
         if step >= delay:
@@ -183,10 +198,11 @@ class RetailerOrdersEnv(gym.Env):
         """Placeholder for environment closing logic if needed."""
         pass
 
-# env= RetailerOrdersEnv(time_horizon=35, track_data=True)
+# env= RetailerOrdersEnv(time_horizon=36, track_data=True)
 
-# obs, *_=env.step(150)
-# env.history
+# for i in range(36):
+#     obs, *_=env.step(120)
+  
 
 # pd.DataFrame(env.history)
 

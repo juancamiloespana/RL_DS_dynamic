@@ -1,14 +1,22 @@
 from RL_DS.envs.retailer_gym import RetailerOrdersEnv
-from utils.normalization import ObsRewardNormalizeWrapper 
-import gym
+from RL_DS.utils.normalization import ObsRewardNormalizeWrapper 
+import gymnasium
 import pandas as pd
 import numpy as np
-import os
-
-
 
 
 
 env= RetailerOrdersEnv(time_horizon=50, track_data=True)
-
 env2= ObsRewardNormalizeWrapper(env)
+env3=RetailerOrdersEnv(time_horizon=50, track_data=True)
+
+env3.step(100)
+env2.step(100)
+
+
+pd.DataFrame(env3.history)
+
+pd.DataFrame(env2.env.history)
+
+env2.
+
