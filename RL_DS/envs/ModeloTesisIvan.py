@@ -87,7 +87,7 @@ class RetailerOrders:
         : dt
         : step
         """
-        self.simulation_time = 36 # weeks
+        self.simulation_time = 47 # weeks
         self.dt = 1.0 # weeks
         self.step_sim = 0 # weeks
         
@@ -104,8 +104,9 @@ class RetailerOrders:
         self.action_list = [0.0]* self.simulation_time
         
     # Método de la función pulso
-    def pulse(self,step, pulse_start =3, height = 20,pulse_end = 36):
-        if(step >= pulse_start and step <= pulse_end):
+    def pulse(self,step, pulse_start =3, height = 20):
+      
+        if(step >= pulse_start and step <= self.simulation_time):
             return height
         else:
             return 0
@@ -181,71 +182,42 @@ class RetailerOrders:
 
         return self.retailer_total_cost
 
+############# pruebas del entorno #######
+ 
+actions_de=[257.88594829, 209.57960392, 170.28192868, 140.48524976,
+       119.74589523, 106.94422777, 100.59021471,  98.9578117 ,
+       100.57384745, 104.00321529, 108.17754893, 112.30625588,
+       115.84292628, 118.57892995, 120.43359765, 121.46822124,
+       121.90404634, 121.93688061, 121.74003065, 121.60987643,
+       121.69458526, 122.0743363 , 122.85516796, 123.9553942 ,
+       125.26283814, 126.52591904, 127.38528922, 127.36169008,
+       125.95921366, 122.54426307, 116.60612778, 107.75949482,
+        95.82931333,  81.036542  ,  64.10373362,  46.17529297,
+        28.98076765,  14.49374935,   4.49882298,   0.        ,
+         0.        ,   0.        ,   0.        ,   0.        ,
+         0.        ,   8.56208228, 272.24740514]
 
-# actions=[30]*36
-# actions=[268, 203, 177, 138, 128, 116,  80,  66,  98, 105, 118, 111, 122, 164,116, 139, 123, 114, 151, 101, 100,  99,  90,  99,  57,  69,  34,  37,
-#   38,  55,  56,  47,  51,  48,  48,  78]
-# len(actions)
+# actions_fix=[100]*47
+
+# actions_CE=[259.68109179, 210.91152195, 171.35084108, 137.64783849,
+#        116.81336704, 106.90350338,  99.21243418, 100.90581488,
+#        101.57465841, 103.55455529, 111.8241507 , 108.79596831,
+#        119.52606938, 115.22771514, 119.91098701, 122.38543703,
+#        124.69295067, 117.84640877, 119.10740143, 124.29103364,
+#        121.24917079, 125.6030072 , 120.21028493, 118.79460864,
+#        122.11987681, 127.64285086, 126.83176275, 128.09689893,
+#        124.57254739, 129.66738289, 123.09179014, 118.53563538,
+#        105.19362769,  94.02391053,  84.70358147,  58.94126073,
+#         48.46636759,  25.63990819,  11.49118603,  14.05944294,
+#          9.08035835,   9.46166999,   8.43878904,   9.23707975,
+#         12.55709491,   8.60496668, 213.36166669]
+
+
+# len(actions_CE)
 # env= RetailerOrders()
-# env.run(actions)
-
+# env.run(actions_de)
+# env.retailer_total_cost
 # import pandas as pd
 # pd.DataFrame(env.history)
 
-# num_samples = 1000   # Number of samples per iteration
-# num_iterations = 500 # Number of iterations
-# Model  = RetailerOrders()
-
-# Mu = np.random.uniform(50, 400, 36)
-# St = np.random.uniform(50, 50, 36)
-# print(f' Mu inicial = {Mu}')
-# #print(f' Std inicial = {St}')
-
-# costos_optim = [0] * 10
-# index_cost = 0 
-
-# print(f'')
-# for i in range(num_iterations):
-
-#     Costs = [0.0] * num_samples
-#     matrix = np.zeros((36, num_samples))
-
-#     for j in range(num_samples):
-#         random_numbers = np.abs(np.random.normal(Mu, St))
-#         matrix[:,j] = random_numbers
-#         Costs[j] = Model.run(random_numbers)
-#         #print(f'Cost {j} = {Costs[j]}') 
-
-#     sorted_indices = [i for i, _ in sorted(enumerate(Costs), key=lambda x: x[1])]
-#     #print("")
-#     #print(sorted_indices)
-#     #print("")
-#     #print(f'matrix {matrix}')
-
-#     sorted_matrix = matrix[:, sorted_indices]
-#     #print("")
-#     #print(f'sorted matrix {sorted_matrix}')
-
-#     selected_columns = sorted_matrix[:, :20]
-#     #print("")
-#     #print(f'selected columns {selected_columns}')
-
-#     Mu = np.mean(selected_columns, axis=1)
-#     #St = np.std(selected_columns, axis=1)
-
-#     if i % 100 == 0:  # Print message every 10 iterations
-#         costos_optim[index_cost] = min(Costs)
-#         print(f'Iteration {i}, lowest cost = {costos_optim[index_cost]}')
-#         index_cost+=1
-
-# print(f'')
-# #print(f' mu = {Mu}')
-# Mu_real = np.round(Mu)
-# print(f' mu = {Mu_real}')
-# print(f'')
-# prueba = RetailerOrders()
-# print(f'Costo final = {prueba.run(Mu)}')
-
-# plt.plot(costos_optim)
-# plt.show()
 

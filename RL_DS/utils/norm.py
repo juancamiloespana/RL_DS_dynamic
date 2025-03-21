@@ -42,7 +42,7 @@ class RunningMeanStd:
 
 
 
-class ObsRewardNormalizeWrapper(gym.Wrapper):
+class ObsRewNormWrapper(gym.Wrapper):
     """
     A gym wrapper that standardizes both observations and rewards
     using running mean and std tracking.
@@ -81,3 +81,7 @@ class ObsRewardNormalizeWrapper(gym.Wrapper):
         reward = float(self.rms_rew.normalize([reward], self.rew_eps))
 
         return obs, reward, done, truncated, info
+    
+
+
+ 

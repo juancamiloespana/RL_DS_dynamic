@@ -1,5 +1,5 @@
 from RL_DS.envs.retailer_gym import RetailerOrdersEnv
-from RL_DS.utils.normalization import ObsRewardNormalizeWrapper 
+from RL_DS_dynamic.RL_DS.utils.norm import ObsRewardNormalizeWrapper 
 import gymnasium
 import pandas as pd
 import numpy as np

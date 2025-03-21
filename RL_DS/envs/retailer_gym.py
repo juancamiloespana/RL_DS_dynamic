@@ -198,10 +198,10 @@ class RetailerOrdersEnv(gym.Env):
         """Placeholder for environment closing logic if needed."""
         pass
 
-# env= RetailerOrdersEnv(time_horizon=36, track_data=True)
+#  env= RetailerOrdersEnv(time_horizon=36, track_data=True)
 
 # for i in range(36):
-#     obs, *_=env.step(120)
+#     obs_r, rew_r, done_raw, _, _=env.step(120)
   
 
 # pd.DataFrame(env.history)
