@@ -1,7 +1,8 @@
 import gymnasium as gym
 import numpy as np
 
-class MinMaxWrapper(gym.Wrapper):
+
+class MinMaxWrapper2(gym.Wrapper):
     """
     A wrapper that applies fixed min-max scaling to BOTH observations and rewards.
     
@@ -17,12 +18,13 @@ class MinMaxWrapper(gym.Wrapper):
     def __init__(
         self,
         env,
-        obs_min_vals=[0,0,0,0,0,0,0,0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,0.0],
-        obs_max_vals=[5000,500,5000,10,5,5,100, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0,500 ],
-        rew_min_val=-5000000,
+        obs_min_vals=[0,0,0,0,0,0,0,0 ],
+        obs_max_vals=[5000,500,5000,1,1,1,100, 500.0],
+        rew_min_val=-1000,
         rew_max_val=0,
         clip_obs=True,
-        clip_rew=True
+        clip_rew=True,
+        track_data=False
     ):
         """
         :param env: The original (unwrapped) environment
@@ -49,10 +51,12 @@ class MinMaxWrapper(gym.Wrapper):
 
         # Create a new Box space for normalized obs in [0, 1]
         self.observation_space = gym.spaces.Box(
-            low=0.0, high=1.0,
+            low=0.0, high=10,
             shape=orig_obs_shape,
             dtype=np.float32
         )
+        self.track_data = track_data
+        self.history = [] if track_data else None
 
         # Reward is a scalar or sometimes a 1D shape=() in Gym.
         # We'll assume it's a scalar that we scale to [0..1] if clip_rew=True.
@@ -60,6 +64,9 @@ class MinMaxWrapper(gym.Wrapper):
     def reset(self, **kwargs):
         obs, info = self.env.reset(**kwargs)
         obs = self._normalize_obs(obs)
+        if self.track_data:
+            self.history = []
+
         return obs, info
 
     def step(self, action):
@@ -67,6 +74,21 @@ class MinMaxWrapper(gym.Wrapper):
 
         obs = self._normalize_obs(obs)
         reward = self._normalize_reward(reward)
+
+        if self.track_data:
+            self.history.append({
+                #"step": self.current_step,
+                "target_delivery_delay": obs[3],
+                "retailer_order_delay": obs[4],
+                'time_remaining': obs[6],
+                'demand': obs[7],
+                "backlog": obs[0],
+                "capacity": obs[1],
+                "time_to_adjust": obs[5], 
+                "supply_gap":obs[2],
+                "reward": float(reward)
+
+            })
 
         return obs, reward, done, truncated, info
 
@@ -84,50 +106,31 @@ class MinMaxWrapper(gym.Wrapper):
         norm_rew = (reward - self.rew_min_val) / (self.rew_max_val - self.rew_min_val + 1e-8)
 
         if self.clip_rew:
-            norm_rew = float(np.clip(norm_rew, 0.0, -1.0))
+            norm_rew = float(np.clip(norm_rew, 0.0, 1.0))
         else:
             norm_rew = float(norm_rew)
 
         return norm_rew
-
-# obs = np.concatenate((np.array([
-#     self.backlog,
-#     self.capacity,
-#     supply_gap,
-#     float(self.target_delivery_delay),
-#     float(self.retailer_order_delay_time), 
-#     float(self.time_adjust_backlog ),
-#     time_remaining], dtype=np.float32), demand_profile))
-
-# obs_min_vals=[0,0,0,0,0,0,0,0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-# obs_max_vals=[5000,500,5000,10,5,5,100, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0,500]
-# rew_min_val=-5000000,
-# rew_max_val=0,
+    
 
 
+# import pandas as pd
+# from RL_DS.envs.retailer_gym import RetailerOrdersEnv2
 
-### uso 
+# env_raw = RetailerOrdersEnv2(time_horizon=47, track_data=True)
+# env_scaled = MinMaxWrapper2(env_raw, clip_obs=False, clip_rew=True,track_data=True)
 
-from RL_DS.envs.retailer_gym import RetailerOrdersEnv
+# env_raw.step(0)
 
-env_raw = RetailerOrdersEnv(time_horizon=36, track_data=True)
-env_scaled = MinMaxWrapper(
-    env_raw,
-    obs_min_vals,
-    obs_max_vals,
-    rew_min_val,
-    rew_max_val,
-    clip_obs=True,
-    clip_rew=True
-)
+# obs, info = env_scaled.reset()
+# print("Scaled initial obs:", obs)  # Should be in [0..1] range per dimension
 
-obs, info = env_scaled.reset()
-print("Scaled initial obs:", obs)  # Should be in [0..1] range per dimension
-env_raw.history
-env_scaled.reward
-action = env_scaled.action_space.sample()
-obs, rew, done, truncated, info = env_scaled.step(0)
-print( rew)
 
-import pandas as pd
-pd.DataFrame(env_raw.history)
+
+# obs, rew, done, truncated, info = env_scaled.step(0)
+# print( rew)
+
+
+
+# pd.DataFrame(env_scaled.env.history)
+# pd.DataFrame(env_scaled.history)
